@@ -1,0 +1,72 @@
+{% extends "bootstrap/base.html" %}
+
+{% block head %}
+  {{ super() }}
+  <link rel="shortcut icon" href="{{ url_for("static", filename="favicon.ico") }}">
+{% endblock %}
+
+{% block title %}
+  Thor
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for("static", filename="js/analytics.js") }}"></script>
+{% endblock %}
+
+{% block navbar %}
+  <div class="container col-md-10 col-md-offset-1">
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+	      <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="{{ url_for("index.page") }}">Thor</a>
+	      </div>
+	      <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+	          <li><a href="{{ url_for("about.page") }}">About</a></li>
+	          {% if current_user.is_authenticated %}
+	            <li><a href="#">Experiments</a></li>
+            <li><a href="{{ url_for("api.page") }}">API</a></li>
+	          <li><a href="{{ url_for("login.logout_page") }}">Logout</a></li>
+          {% else %}
+            <li><a href="{{ url_for("login.login_page") }}">Login</a></li>
+	        {% endif %}
+	        </ul>
+	      </div>{# /.nav-collapse #}
+      </div>{# /.container-fluid #}
+    </nav>
+  </div>{# /.container #}
+{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3 col-md-offset-1">
+	      <center>
+	        <img src="{{ url_for("static", filename="banner.png") }}" class="img-responsive" alt="God of Thunder">
+	        <br/>
+	        <p class="text-muted">
+      	    A server for Bayesian optimization where you can review your past and ongoing experiments.
+	        </p>
+	      </center>
+	      <br/>
+      </div>
+      <div class="col-md-7">
+	      {% include "utils/flash.jinja2" %}
+	      {% block main_content %}{% endblock %}
+      </div>
+    </div>{# /.row #}
+    <div class="col-md-10 col-md-offset-1">
+      <hr class="featurette-divider">
+      <footer>
+	      <p>&copy; James Brofos 2017</p>
+      </footer>
+    </div>
+  </div>{# /.container #}
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.jinja2" %}
+
+{% block main_content %}
+  <h1>Page Not Found</h1>
+<p>What you were looking for is just not there.</p> 
+<p><a href="{{ url_for('index.page') }}">Go somewhere nicer.</a></p> 
+{% endblock %}
