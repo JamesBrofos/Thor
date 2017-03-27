@@ -5,16 +5,17 @@ from ..kernels import SquaredExponentialKernel
 
 class GaussianProcess(object):
     """Gaussian Process Class"""
-    def __init__(self, kernel):
+    def __init__(self, kernel, prior_mean=0.):
         """Initialize the parameters of the Gaussian process object."""
         self.kernel = kernel
+        self.prior_mean = prior_mean
 
     def fit(self, X, y):
         """Estimate the parameters of the Gaussian process based on available
         training data.
         """
         # Store the training data (both the inputs and the targets).
-        self.X, self.y = X, y
+        self.X, self.y = X, y - self.prior_mean
         # Compute the covariance matrix of the observed inputs.
         K = self.kernel.cov(self.X)
         # For a numerically stable algorithm, we use Cholesky decomposition.
@@ -36,7 +37,7 @@ class GaussianProcess(object):
         K_cross = self.kernel.cov(X_pred, self.X)
         v = spla.solve_triangular(self.__L, K_cross.T, lower=True)
         # Posterior inference.
-        mean = K_cross.dot(self.__alpha)
+        mean = K_cross.dot(self.__alpha) + self.prior_mean
         var = K_pred - v.T.dot(v)
         # Compute the diagonal of the covariance matrix if we wish to disregard
         # all of the covariance information and only focus on the variances at

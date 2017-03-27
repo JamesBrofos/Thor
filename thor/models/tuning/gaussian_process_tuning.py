@@ -4,26 +4,26 @@ from ..gaussian_process import GaussianProcess
 from ...kernels.squared_exponential_kernel import SquaredExponentialKernel
 
 
-def __negative_marginal_likelihood(params, X, y, kernel_class):
+def __negative_marginal_likelihood(params, X, y, kernel_class, prior_mean):
     # Extract kernel parameters.
     amplitude = params[0]
     noise = params[-1]
     length_scales = params[1:-1]
     # Create Gaussian process kernel.
     kernel = kernel_class(amplitude, length_scales, noise)
-    gp = GaussianProcess(kernel)
+    gp = GaussianProcess(kernel, prior_mean)
     gp.fit(X, y)
 
     return -1. * gp.log_likelihood()
 
-def __negative_marginal_likelihood_grad(params, X, y, kernel_class):
+def __negative_marginal_likelihood_grad(params, X, y, kernel_class, prior_mean):
     # Extract kernel parameters.
     amplitude = params[0]
     noise = params[-1]
     length_scales = params[1:-1]
     # Create Gaussian process kernel.
     kernel = kernel_class(amplitude, length_scales, noise)
-    gp = GaussianProcess(kernel)
+    gp = GaussianProcess(kernel, prior_mean)
     gp.fit(X, y)
     # Compute the gradient and make sure that the gradient with respect to the
     # length scales is treated as an array.
@@ -33,8 +33,7 @@ def __negative_marginal_likelihood_grad(params, X, y, kernel_class):
     return grad
 
 def fit_marginal_likelihood(
-        X, y, kernel_class=SquaredExponentialKernel,
-        n_restarts=10
+        X, y, n_restarts, kernel_class, prior_mean
 ):
         """Fit the parameters of the Gaussian process by maximizing the marginal
         log-likelihood of the data.
@@ -59,7 +58,7 @@ def fit_marginal_likelihood(
                     __negative_marginal_likelihood,
                     params,
                     fprime=__negative_marginal_likelihood_grad,
-                    args=(X, y, kernel_class),
+                    args=(X, y, kernel_class, prior_mean),
                     bounds=bounds,
                     disp=0
                 )
@@ -67,7 +66,7 @@ def fit_marginal_likelihood(
                     res[0][0], res[0][1:-1], res[0][-1]
                 )
                 kernel = kernel_class(amplitude, length_scales, noise)
-                gp = GaussianProcess(kernel)
+                gp = GaussianProcess(kernel, prior_mean)
                 gp.fit(X, y)
             except np.linalg.linalg.LinAlgError:
                 print("Linear algebra failure.")

@@ -4,7 +4,7 @@ from .abstract_acquisition_function import AbstractAcquisitionFunction
 
 class UpperConfidenceBound(AbstractAcquisitionFunction):
     """Upper Confidence Bound Acquisition Function Class"""
-    def __init__(self, model, kappa):
+    def __init__(self, model, kappa=2.):
         """Initialize parameters of the upper confidence bound acquisition
         function object.
         """

@@ -4,11 +4,10 @@ from .abstract_kernel import AbstractKernel
 
 class MaternKernel(AbstractKernel):
     """Matern Kernel Class"""
-    def __init__(self, amplitude, length_scale, noise_level, nu="5/2"):
+    def __init__(self, amplitude, length_scale, noise_level):
         """Initialize parameters of the Matern kernel object."""
         super(MaternKernel, self).__init__(amplitude, length_scale, noise_level)
-        self.nu = nu
-        self.kernel_name = "Matern Kernel {}".format(self.nu)
+        self.kernel_name = "Matern Kernel 5/2"
 
     def cov(self, X, Y=None):
         """Implementation of abstract base class method."""
@@ -22,16 +21,7 @@ class MaternKernel(AbstractKernel):
         r_sq = self.pairwise_distances(X, Y)
         r = np.sqrt(r_sq)
         # Compute the Matern kernel.
-        if self.nu == "1/2":
-            k = np.exp(-r)
-        elif self.nu == "3/2":
-            k = (1. + np.sqrt(3.)*r) * np.exp(-np.sqrt(3.)*r)
-        elif self.nu == "5/2":
-            k = (1. + np.sqrt(5.)*r + 5./3.*r_sq) * np.exp(-np.sqrt(5.)*r)
-        else:
-            raise ValueError(
-                "Invalid nu parameter in Matern kernel: {}".format(self.nu)
-            )
+        k = (1. + np.sqrt(5.)*r + 5./3.*r_sq) * np.exp(-np.sqrt(5.)*r)
 
         return self.amplitude * k + noise_variance
 
@@ -74,16 +64,10 @@ class MaternKernel(AbstractKernel):
             (np.expand_dims(X, axis=1) - np.expand_dims(X, axis=0)) ** 2 /
             (self.length_scales ** 3)
         )
-        if self.nu == "3/2":
-            K_ls_grad = 3 * D * np.exp(-np.sqrt(3 * D.sum(-1)))[..., np.newaxis]
-        elif self.nu == "5/2":
-            tmp = np.sqrt(5 * D.sum(-1))[..., np.newaxis]
-            K_ls_grad = (5.0 / 3.0 * D * (tmp + 1) * np.exp(-tmp))
-        else:
-            raise ValueError(
-                "Invalid nu parameter in Matern kernel: {}".format(self.nu)
-            )
+        T = np.sqrt(5 * D.sum(-1))[..., np.newaxis]
+        K_ls_grad = 5.0 / 3.0 * D * (T + 1) * np.exp(-T)
         K_amp_grad = self.cov(X) - self.noise_level * np.eye(X.shape[0])
+
         return K_amp_grad, K_ls_grad
 
 

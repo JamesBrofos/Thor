@@ -6,10 +6,6 @@ class Dimension(object):
     """Bayesian Optimization Input Dimension Class"""
     __metaclass__ = ABCMeta
 
-    # def __init__(self, name):
-    #     """Initialize parameters of the input dimension object."""
-    #     self.name = name
-
     @abstractmethod
     def transform(self, original_input):
         """Transforms an original input object to a real number in the unit
@@ -55,15 +51,26 @@ class LinearDimension(Dimension):
         return transformed_input * self.__diff + self.low
 
 
+class LogarithmicDimension(LinearDimension):
+    """Bayesian Optimization Logarithmic Dimension Class"""
+    def __init__(self, low, high):
+        super(LogarithmicDimension, self).__init__(np.log(low), np.log(high))
+
+    def transform(self, original_input):
+        """Extension of base class method."""
+        return super(LogarithmicDimension, self).transform(np.log(original_input))
+
+    def invert(self, transformed_input):
+        """Extension of base class method."""
+        return np.exp(super(LogarithmicDimension, self).invert(transformed_input))
+
+
 class IntegerDimension(LinearDimension):
-    """Bayesian Optimization Integer Dimension Class
-    """
+    """Bayesian Optimization Integer Dimension Class"""
     def __init__(self, low, high):
         """Initialize the parameters of the integer dimension class."""
-        if type(low) != int or type(high) != int:
-            raise ValueError("Invalid bounds parameter in integer dimension.")
-        super(IntegerDimension, self).__init__(low, high)
-        self.integers = np.array([i for i in range(low, high+1)])
+        super(IntegerDimension, self).__init__(int(low), int(high))
+        self.integers = np.array([i for i in range(self.low, self.high+1)])
         self.n_integers = len(self.integers)
         self.delta = np.linspace(0., 1., num=self.n_integers + 1)
 

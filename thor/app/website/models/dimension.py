@@ -1,3 +1,4 @@
+from thor.space import LinearDimension, IntegerDimension, LogarithmicDimension
 from .. import db
 
 
@@ -17,6 +18,23 @@ class Dimension(db.Model):
         self.dim_type = dim_type
         self.low = low
         self.high = high
+
+    @classmethod
+    def from_json(cls, json):
+        return cls(
+            json["name"],
+            json["dim_type"],
+            json["low"],
+            json["high"]
+        )
+
+    def to_thor_dimension(self):
+        dim_class = {
+            "linear": LinearDimension,
+            "integer": IntegerDimension,
+            "logarithmic": LogarithmicDimension
+        }[self.dim_type]
+        return dim_class(self.low, self.high)
 
     def to_dict(self):
         return {

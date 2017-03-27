@@ -2,7 +2,8 @@ from .index import index
 from .login import login
 from .signup import signup
 from .about import about
-from .api import api
+from .api import api_endpoints
+from .experiment import experiment
 
 
 blueprints = [
@@ -10,5 +11,5 @@ blueprints = [
     login,
     signup,
     about,
-    api,
-]
+    experiment,
+] + api_endpoints

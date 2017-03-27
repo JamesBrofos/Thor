@@ -6,8 +6,10 @@
 <hr class="featurette-divider">
 {% if current_user.is_authenticated %}
   {% for experiment in current_user.experiments %}
-    <h4>{{ experiment.name }}</h4>
-<p>{{ experiment.date.strftime('%Y-%m-%d') }} | Observations {{ experiment.observations.count() }}</p>
+    <h4><a href="{{ url_for("experiment.page", name=experiment.name) }}">{{ experiment.name }}</a></h4>
+<p>
+  {{ experiment.date.strftime('%Y-%m-%d') }} | Observations {{ experiment.observations.count() }}{% if experiment.maximal_observation %} | Metric {{ experiment.maximal_observation.y|round(4) }}{% endif %}
+</p>
   {% endfor %}
 {% endif %}
 {% endblock %}

@@ -11,8 +11,13 @@
 
 {% block scripts %}
   {{ super() }}
-  <script src="{{ url_for("static", filename="js/analytics.js") }}"></script>
 {% endblock %}
+
+{% block styles %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for("static", filename="css/experiment.css") }}">
+{% endblock %}
+
 
 {% block navbar %}
   <div class="container col-md-10 col-md-offset-1">
@@ -31,7 +36,6 @@
           <ul class="nav navbar-nav navbar-right">
 	          <li><a href="{{ url_for("about.page") }}">About</a></li>
 	          {% if current_user.is_authenticated %}
-	            <li><a href="#">Experiments</a></li>
             <li><a href="{{ url_for("api.page") }}">API</a></li>
 	          <li><a href="{{ url_for("login.logout_page") }}">Logout</a></li>
           {% else %}
@@ -47,7 +51,7 @@
 {% block content %}
   <div class="container">
     <div class="row">
-      <div class="col-md-3 col-md-offset-1">
+      <div class="col-md-2 col-md-offset-1">
 	      <center>
 	        <img src="{{ url_for("static", filename="banner.png") }}" class="img-responsive" alt="God of Thunder">
 	        <br/>
@@ -57,7 +61,7 @@
 	      </center>
 	      <br/>
       </div>
-      <div class="col-md-7">
+      <div class="col-md-8">
 	      {% include "utils/flash.jinja2" %}
 	      {% block main_content %}{% endblock %}
       </div>
