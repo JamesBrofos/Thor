@@ -13,8 +13,7 @@ class UpperConfidenceBound(AbstractAcquisitionFunction):
 
     def acquire(self, X_pred):
         """Implementation of abstract base class method."""
-        mean, var = self.model.predict(X_pred)
-        sd = np.sqrt(var)
+        mean, sd = self.model.predict(X_pred)
         return mean + self.kappa * sd
 
     def grad_input(self, x):

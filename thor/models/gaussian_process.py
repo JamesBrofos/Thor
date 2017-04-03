@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.linalg as spla
-from ..kernels import SquaredExponentialKernel
+from ..kernels import SumKernel
 
 
 class GaussianProcess(object):
@@ -20,11 +20,11 @@ class GaussianProcess(object):
         K = self.kernel.cov(self.X)
         # For a numerically stable algorithm, we use Cholesky decomposition.
         self.__L = spla.cholesky(K, lower=True)
-        self.__alpha = spla.cho_solve((self.__L, True), self.y)
+        self.__alpha = spla.cho_solve((self.__L, True), self.y).ravel()
         L_inv = spla.solve_triangular(self.__L.T, np.eye(self.__L.shape[0]))
         self.__K_inv = L_inv.dot(L_inv.T)
 
-    def predict(self, X_pred, diagonalize=True):
+    def predict(self, X_pred, covariance=False):
         """Leverage Bayesian posterior inference to compute the predicted mean
         and variance of a given set of inputs given the available training data.
         Notice that it is necessary to first fit the Gaussian process model
@@ -33,19 +33,35 @@ class GaussianProcess(object):
         # Compute the cross covariance between training and the requested
         # inference locations. Also compute the covariance matrix of the
         # observed inputs and the covariance at the inference locations.
-        K_pred = self.kernel.cov(X_pred)
+        if type(self.kernel) == SumKernel:
+            K_pred = self.kernel.cov(X_pred, include_noise=False)
+        else:
+            K_pred = self.kernel.cov(X_pred)
         K_cross = self.kernel.cov(X_pred, self.X)
         v = spla.solve_triangular(self.__L, K_cross.T, lower=True)
         # Posterior inference.
         mean = K_cross.dot(self.__alpha) + self.prior_mean
-        var = K_pred - v.T.dot(v)
+        cov = K_pred - v.T.dot(v)
         # Compute the diagonal of the covariance matrix if we wish to disregard
         # all of the covariance information and only focus on the variances at
         # the given inputs.
-        if diagonalize:
-            var = np.diag(var)
+        if covariance:
+            return mean, cov
+        else:
+            return mean, np.sqrt(np.diag(cov))
 
-        return mean, var
+    def sample(self, X):
+        """Sample target variables from the predictive posterior distribution of
+        the Gaussian process.
+        """
+        # Get the mean and covariance.
+        mean, cov = self.predict(X, covariance=True)
+        # If there is noise in the kernel, make sure we are sampling from the
+        # predictive distribution of the targets and not the mean.
+        if type(self.kernel) == SumKernel:
+            cov += self.kernel.noise_kernel.cov(X_pred)
+
+        return np.random.multivariate_normal(mean, cov)
 
     def log_likelihood(self):
         """Compute the log-likelihood of the data under the Gaussian process
@@ -65,16 +81,17 @@ class GaussianProcess(object):
         principled manner.
         """
         # Gradients of the kernel with respect to kernel parameters.
-        K_amp_grad, K_ls_grad = self.kernel.grad_params(self.X)
+        grad_params = self.kernel.grad_params(self.X)
         # Helpful matrices (avoids need to recompute).
         A = np.outer(self.__alpha, self.__alpha)
         D = A - self.__K_inv
+        # Define log-likelihood gradient dictionary.
+        ll_grad = {}
         # Compute and return gradients.
-        amp_grad = 0.5 * np.trace(D.dot(K_amp_grad))
-        ls_grad = 0.5 * np.trace(D.dot(K_ls_grad))
-        noise_grad = 0.5 * np.trace(D)
+        for p, grad in grad_params.items():
+            ll_grad[p] = np.atleast_1d(0.5 * np.trace(D.dot(grad)))
 
-        return amp_grad, ls_grad, noise_grad
+        return ll_grad
 
     def grad_input(self, x):
         """Compute the gradient of the mean function and the standard deviation
@@ -86,7 +103,7 @@ class GaussianProcess(object):
         # Compute the gradient of the standard deviation function. It is
         # absolutely crucial to note that the predict method returns the
         # variance, not the standard deviation, of the prediction.
-        sd = np.sqrt(self.predict(x)[1])
+        sd = self.predict(x)[1]
         K_cross = self.kernel.cov(x, self.X)
         M = spla.cho_solve((self.__L, True), K_cross.T).ravel()
         d_sd = -d_kernel.T.dot(M) / sd

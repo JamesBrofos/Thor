@@ -18,8 +18,8 @@ try:
     exp = ec.create_experiment(
         "Franke Function",
         dims,
-        10,
-        10,
+        50,
+        50,
         "expected_improvement"
     )
 except ValueError:

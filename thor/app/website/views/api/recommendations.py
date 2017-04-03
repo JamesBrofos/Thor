@@ -8,8 +8,8 @@ from thor.acquisitions import (
     ImprovementProbability
 )
 from thor.models.tuning import fit_marginal_likelihood
-from thor.optimizers import BayesianOptimization
-from thor.kernels import SquaredExponentialKernel, MaternKernel
+from thor.optimization import BayesianOptimization
+from thor.kernels import MaternKernel, NoiseKernel, SumKernel
 from ...models import Experiment, Observation
 from ... import db
 from ...utils import (
@@ -46,14 +46,24 @@ def create_recommendation(user):
         pending = e.observations.filter(Observation.pending==True).all()
         # Do Bayesian optimization.
         X, y = decode_recommendation(observed, dims)
+        n, k = X.shape
+        # Create kernel.
+        kernel = MaternKernel(np.nan, np.full((k, ), np.nan))
         # First fit the Gaussian process using observed data.
         prior_mean = 0.
         gp = fit_marginal_likelihood(
-            X, y, e.n_restarts, MaternKernel, prior_mean
+            X, y, e.n_restarts, kernel, prior_mean
         )
         # Create fantasy observations for the pending values.
         if len(pending) > 0:
-            pass
+            # Decode the pending observations.
+            X_pending, _ = decode_recommendation(pending, dims)
+            # Sample from the predictive posterior.
+            y_pending = gp.sample(X_pending)
+            # Retrain Gaussian process.
+            X = np.vstack((X, X_pending))
+            y = np.append(y, y_pending)
+            gp.fit(X, y)
 
         acq = {
             "expected_improvement": ExpectedImprovement,

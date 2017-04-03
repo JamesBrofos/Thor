@@ -17,10 +17,9 @@ class ImprovementAcquisitionFunction(AbstractAcquisitionFunction):
         """
         # Compute the mean and standard deviation of the model's interpolant of
         # the objective function.
-        mean, var = self.model.predict(X_pred)
-        sd = np.sqrt(var)
+        mean, sd = self.model.predict(X_pred)
         # Compute z-score-like quantity capturing the excess of the mean over
         # the current best, adjusted for uncertainty in the measurement.
         gamma = (mean - self.y_best) / sd
 
-        return gamma, mean, var
+        return gamma, mean, sd

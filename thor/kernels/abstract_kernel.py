@@ -1,36 +1,39 @@
-import numpy as np
-from abc import ABCMeta, abstractmethod
-from scipy.spatial.distance import cdist
+from abc import ABCMeta, abstractmethod, abstractproperty
+from functools import reduce
 
 
 class AbstractKernel(object):
     """Abstract Kernel Class"""
     __metaclass__ = ABCMeta
 
-    def __init__(self, amplitude, length_scales, noise_level):
-        """Initialize parameters of the abstract kernel object."""
-        self.amplitude = amplitude
-        self.length_scales = length_scales
-        self.noise_level = noise_level
+    def sample(self):
+        """Sample kernel parameters."""
+        return {p.name: p.sample() for p in self.parameters}
 
-    def __str__(self):
-        s = "{}\n".format(self.kernel_name)
-        s += "\tAmplitude:\t{:.4f}\n".format(self.amplitude)
-        s += "\tLength Scales:\n"
-        for ls in self.length_scales:
-            s += "\t\t\t{:.4f}\n".format(ls)
-        s += "\tNoise Level:\t{:.4f}".format(self.noise_level)
-        return s
+    def update(self, values):
+        """Update the parameters of the kernel using provided values."""
+        idx = 0
+        for p in self.parameters:
+            sz = len(p.value)
+            p.value = values[idx:(idx+sz)]
+            idx += sz
 
-    def pairwise_distances(self, X, Y):
-        """Computes the pairwise distances of all of the rows in one matrix to
-        all of the rows of the other.
+    @property
+    def bounds(self):
+        """Retrieve the bounds of the kernel parameters."""
+        bnds = []
+        for p in self.parameters:
+            for _ in range(len(p.value)):
+                bnds.append(p.bounds)
+
+        return bnds
+
+    @abstractproperty
+    def parameters(self):
+        """Returns the parameters of the kernel, including such values as the
+        length scales, the amplitude, and the noise.
         """
-        # Rescale the inputs using the length scales.
-        Xp = X / self.length_scales
-        Yp = Y / self.length_scales
-
-        return cdist(Xp, Yp, "sqeuclidean")
+        raise NotImplementedError()
 
     @abstractmethod
     def cov(self, X, Y=None):

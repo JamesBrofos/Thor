@@ -1,0 +1,39 @@
+{{ plot_div|indent(4)|safe }}
+{% if experiment.maximal_observation %}
+<div class="row">
+   <div class="col-md-4">
+      <p>
+         <b>Maximal objective value:</b> {{ experiment.maximal_observation.y|round(4) }}
+      </p>
+      <p>
+         <b>Percent improvement:</b> {{ experiment.percent_improvement|round(2) }}%
+      </p>
+      <p>
+         <b>Number of observations:</b> {{ experiment.observations.count() }}
+      </p>
+   </div>
+   <div class="col-md-8">
+      <b>Maximal objective configuration:</b>
+      <table class="table">
+         <thead>
+            <tr>
+               <th>Variable</th>
+               <th>Value</th>
+               <th>Low</th>
+               <th>High</th>
+            </tr>
+         </thead>
+         <tbody>
+            {% for dim in experiment.dimensions.all() %}
+            <tr>
+               <td>{{ dim.name }}</td>
+               <td>{{ experiment.maximal_observation.config[dim.name]|round(8) }}</td>
+               <td>{{ dim.low }}</td>
+               <td>{{ dim.high }}</td>
+            </tr>
+            {% endfor %}
+         </tbody>
+      </table>
+   </div>
+</div>
+{% endif %}

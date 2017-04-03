@@ -11,8 +11,7 @@ class ImprovementProbability(ImprovementAcquisitionFunction):
 
     def grad_input(self, x):
         """Implementation of abstract base class method."""
-        gamma, mean, var = self.score(x)
-        sd = np.sqrt(var)
+        gamma, mean, sd = self.score(x)
         d_mean, d_sd = self.model.grad_input(x)
         d_gamma = (d_mean - gamma * d_sd) / sd
 

@@ -1,3 +1,7 @@
 .delete-btn {
     padding-top: 17px;
 }
+.disabled {
+   pointer-events: none;
+   cursor: default;
+}

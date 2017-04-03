@@ -1,106 +1,99 @@
 import unittest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from thor.kernels import SquaredExponentialKernel, NoiseKernel, SumKernel
 from thor.models import GaussianProcess
-from thor.kernels import SquaredExponentialKernel, MaternKernel
+from thor.models.tuning import fit_marginal_likelihood
 
 
+# For reproducibility.
+np.random.seed(0)
 
 class GaussianProcessTest(unittest.TestCase):
-    def test_fit(self):
-        n = 10
+    """Test Module for Gaussian Process Class"""
+    def test_multidimensional_gaussian_process(self):
+        # Create fake data.
+        n = 50
+        k = 2
+        X = np.random.uniform(size=(n, k))
+        # Create kernel function.
+        true_kernel = SquaredExponentialKernel(1., (0.1, 0.25))
+        true_mean, true_cov = np.zeros((n, )), true_kernel.cov(X)
+        y = np.random.multivariate_normal(true_mean, true_cov)
+
+        # Create a kernel whose parameters are initialized to null values.
+        dom_kernel = SquaredExponentialKernel(np.nan, np.full((k, ), np.nan))
+        noise_kernel = NoiseKernel(np.nan)
+        kernel = SumKernel([dom_kernel], noise_kernel)
+        # Fit the Gaussian process with marginal likelihood.
+        n_restarts = 500
+        prior_mean = 0.
+        gp = fit_marginal_likelihood(X, y, n_restarts, kernel, prior_mean)
+
+    def test_fit_marginal_likelihood(self):
+        # Create fake data.
+        n = 5
         k = 1
-        X = np.random.uniform(low=-1., high=1., size=(n, k))
-        ls = np.ones((k, )) * 0.4
-        k = SquaredExponentialKernel(1., ls, 0.)
-        C = k.cov(X)
-        y = np.random.multivariate_normal(np.zeros((n, )), C)
-        gp = GaussianProcess(k)
-        gp.fit(X, y)
-        n_pred = 100
-        X_pred = np.atleast_2d(np.linspace(-1., 1., num=n_pred)).T
-        mean_pred, var_pred = gp.predict(X_pred)
+        X = np.random.uniform(size=(n, k))
+        y = np.sin(10*X).ravel() + np.random.normal(size=(n, )) / 10.
+        # Create a kernel whose parameters are initialized to null values.
+        dom_kernel = SquaredExponentialKernel(np.nan, np.full((k, ), np.nan))
+        noise_kernel = NoiseKernel(np.nan)
+        kernel = SumKernel([dom_kernel], noise_kernel)
+        kernel = SquaredExponentialKernel(np.nan, np.full((k, ), np.nan))
+        # Fit the Gaussian process with marginal likelihood.
+        n_restarts = 100
+        prior_mean = 0.
+        gp = fit_marginal_likelihood(X, y, n_restarts, kernel, prior_mean)
 
-        self.assertEqual(n_pred, mean_pred.shape[0])
-        self.assertEqual(n_pred, var_pred.shape[0])
+        # Predict with the Gaussian process.
+        n_pred = 1000
+        X_pred = np.atleast_2d(np.linspace(0., 1., num=n_pred)).T
+        mean, sd = gp.predict(X_pred)
 
-        if False:
-            plt.figure()
-            plt.plot(X, y, "k.")
-            plt.plot(X_pred, mean_pred, "r-")
-            plt.plot(X_pred, mean_pred + 2*np.sqrt(var_pred), "r--")
-            plt.plot(X_pred, mean_pred - 2*np.sqrt(var_pred), "r--")
+        # Visualize.
+        if True:
+            plt.figure(figsize=(18, 6))
+            plt.plot(X.ravel(), y, "k.")
+            plt.plot(X_pred.ravel(), mean, "r-")
+            plt.plot(X_pred.ravel(), mean + 2*sd, "r--")
+            plt.plot(X_pred.ravel(), mean - 2*sd, "r--")
             plt.grid()
             plt.show()
 
-    def test_squared_exponential_grad_input(self):
-        np.random.seed(0)
-        n = 10
-        k = 1
-        X = np.random.uniform(low=-1., high=1., size=(n, k))
-        ls = np.ones((k, )) * 0.1
-        kernel = SquaredExponentialKernel(1., ls, 0.)
-        C = kernel.cov(X)
-        y = np.random.multivariate_normal(np.zeros((n, )), C)
+    def test_squared_exponential_gaussian_process(self):
+        # Define amplitude and length scale.
+        amp, ls, noise = 1., (0.1, ), 0.01
+        # Create kernel.
+        dom_kernel = SquaredExponentialKernel(amp, ls)
+        noise_kernel = NoiseKernel(noise)
+        kernel = SumKernel([dom_kernel], noise_kernel)
+        # Compute the Gaussian process.
         gp = GaussianProcess(kernel)
+        # Create fake data.
+        n = 50
+        X = np.random.uniform(size=(n, 1))
+        y = np.sin(10*X)
+        # Train Gaussian process.
         gp.fit(X, y)
-        n_pred = 100
-        X_pred = np.atleast_2d(np.linspace(-1., 1., num=n_pred)).T
-        mean_pred, var_pred = gp.predict(X_pred)
 
-        x_mean_max = np.zeros((1, k))
-        x_sd_max = np.zeros((1, k)) + 0.5
-        for i in range(50):
-            x_mean_max += 0.01 * gp.grad_input(x_mean_max)[0]
-            x_sd_max += 0.01 * gp.grad_input(x_sd_max)[1]
-        y_mean_max = gp.predict(x_mean_max)[0]
-        y_sd_max = gp.predict(x_sd_max)[0]
+        # Predict with the Gaussian process.
+        n_pred = 1000
+        X_pred = np.atleast_2d(np.linspace(0., 1., num=n_pred)).T
+        mean, sd = gp.predict(X_pred)
 
+        # Visualize.
         if False:
-            plt.figure()
-            plt.plot(X, y, "k.")
-            plt.plot(X_pred, mean_pred, "r-")
-            plt.plot(X_pred, mean_pred + 2*np.sqrt(var_pred), "r--")
-            plt.plot(X_pred, mean_pred - 2*np.sqrt(var_pred), "r--")
-            plt.plot(x_mean_max, y_mean_max, "k*", markersize=15)
-            plt.plot(x_sd_max, y_sd_max, "k*", markersize=15)
-            plt.grid()
-            plt.show()
-
-    def test_matern_grad_input(self):
-        np.random.seed(0)
-        n = 10
-        k = 1
-        X = np.random.uniform(low=-1., high=1., size=(n, k))
-        ls = np.ones((k, )) * 0.1
-        kernel = MaternKernel(1., ls, 0.)
-        C = kernel.cov(X)
-        y = np.random.multivariate_normal(np.zeros((n, )), C)
-        gp = GaussianProcess(kernel)
-        gp.fit(X, y)
-        n_pred = 100
-        X_pred = np.atleast_2d(np.linspace(-1., 1., num=n_pred)).T
-        mean_pred, var_pred = gp.predict(X_pred)
-
-        x_mean_max = np.zeros((1, k)) - 0.2
-        x_sd_max = np.zeros((1, k)) + 0.5
-        for i in range(1000):
-            x_mean_max += 0.001 * gp.grad_input(x_mean_max)[0]
-            x_sd_max += 0.001 * gp.grad_input(x_sd_max)[1]
-        y_mean_max = gp.predict(x_mean_max)[0]
-        y_sd_max = gp.predict(x_sd_max)[0]
-
-        if False:
-            plt.figure()
-            plt.plot(X, y, "k.")
-            plt.plot(X_pred, mean_pred, "r-")
-            plt.plot(X_pred, mean_pred + 2*np.sqrt(var_pred), "r--")
-            plt.plot(X_pred, mean_pred - 2*np.sqrt(var_pred), "r--")
-            plt.plot(x_mean_max, y_mean_max, "k*", markersize=15)
-            plt.plot(x_sd_max, y_sd_max, "k*", markersize=15)
+            plt.figure(figsize=(18, 6))
+            plt.plot(X.ravel(), y, "k.")
+            plt.plot(X_pred.ravel(), mean, "r-")
+            plt.plot(X_pred.ravel(), mean + 2*sd, "r--")
+            plt.plot(X_pred.ravel(), mean - 2*sd, "r--")
             plt.grid()
             plt.show()
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
