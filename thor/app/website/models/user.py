@@ -12,6 +12,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(80), unique=True)
     _password = db.Column(db.String(100))
+    confirmed = db.Column(db.Boolean, default=False)
     auth_token = db.Column(db.String(80), unique=True)
     experiments = db.relationship(
         "Experiment",

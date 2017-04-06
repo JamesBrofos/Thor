@@ -15,6 +15,12 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
     "postgresql://thor_server:thor@localhost:5432/thor"
 )
 app.config["SECRET_KEY"] = "50601550186443463175"
+app.config["MAIL_PREFIX"] = "[Thor] "
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 465
+app.config["MAIL_USE_SSL"] = True
+app.config["MAIL_USERNAME"] = "jamesbrofosblog@gmail.com"
+app.config["MAIL_PASSWORD"] = "4MITREbrofos!JB"
 
 
 # Add-ons for the app.

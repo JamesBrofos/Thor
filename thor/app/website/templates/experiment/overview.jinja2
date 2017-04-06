@@ -19,6 +19,7 @@
             <tr>
                <th>Variable</th>
                <th>Value</th>
+               <th>Type</th>
                <th>Low</th>
                <th>High</th>
             </tr>
@@ -28,6 +29,7 @@
             <tr>
                <td>{{ dim.name }}</td>
                <td>{{ experiment.maximal_observation.config[dim.name]|round(8) }}</td>
+               <td>{{ dim.dim_type.capitalize() }}</td>
                <td>{{ dim.low }}</td>
                <td>{{ dim.high }}</td>
             </tr>

@@ -42,7 +42,7 @@ def analysis_page(name):
             fig = figure(
                 title="Metric vs. Variable Scatter",
                 tools="pan,box_zoom,reset",
-                plot_height=300,
+                plot_height=225,
                 responsive=True,
                 x_axis_label="Variable",
             )
@@ -89,7 +89,7 @@ def overview_page(name):
             fig = figure(
                 title="Metric Improvement",
                 tools="pan,box_zoom,reset",
-                plot_height=300,
+                plot_height=225,
                 responsive=True,
                 x_axis_label="Iterations",
             )

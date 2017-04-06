@@ -24,7 +24,7 @@ try:
         dims,
         100,
         100,
-        "expected_improvement"
+        "hedge"
     )
 except ValueError:
     exp = ec.experiment_for_name("Hartmann 6-D")

@@ -5,9 +5,17 @@ from .improvement_acquisition_function import ImprovementAcquisitionFunction
 
 class ExpectedImprovement(ImprovementAcquisitionFunction):
     """Expected Improvement Acquisition Function Class"""
-    def acquire(self, X_pred):
+    def __init__(self, model, db_acq, y_best=None):
+        """Initialize parameters of the expected improvement acquisition
+        function.
+        """
+        super(ExpectedImprovement, self).__init__(
+            model, db_acq, y_best=y_best
+        )
+
+    def evaluate(self, X):
         """Implementation of abstract base class method."""
-        gamma, mean, sd = self.score(X_pred)
+        gamma, mean, sd = self.score(X)
         ei = (mean - self.y_best) * norm.cdf(gamma) + sd * norm.pdf(gamma)
         return ei
 

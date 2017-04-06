@@ -5,9 +5,17 @@ from .improvement_acquisition_function import ImprovementAcquisitionFunction
 
 class ImprovementProbability(ImprovementAcquisitionFunction):
     """Improvement Probability Acquisition Function Class"""
-    def acquire(self, X_pred):
+    def __init__(self, model, db_acq, y_best=None):
+        """Initialize parameters of the improvement probability acquisition
+        function.
+        """
+        super(ImprovementProbability, self).__init__(
+            model, db_acq, y_best=y_best
+        )
+
+    def evaluate(self, X):
         """Implementation of abstract base class method."""
-        return norm.cdf(self.score(X_pred)[0])
+        return norm.cdf(self.score(X)[0])
 
     def grad_input(self, x):
         """Implementation of abstract base class method."""

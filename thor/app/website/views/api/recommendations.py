@@ -5,7 +5,8 @@ from flask_api import status
 from thor.acquisitions import (
     ExpectedImprovement,
     UpperConfidenceBound,
-    ImprovementProbability
+    ImprovementProbability,
+    HedgeAcquisition
 )
 from thor.models.tuning import fit_marginal_likelihood
 from thor.optimization import BayesianOptimization
@@ -68,11 +69,11 @@ def create_recommendation(user):
         acq = {
             "expected_improvement": ExpectedImprovement,
             "improvement_probability": ImprovementProbability,
-            "upper_confidence_bound": UpperConfidenceBound
-        }[e.acq_func](gp)
+            "upper_confidence_bound": UpperConfidenceBound,
+            "hedge": HedgeAcquisition
+        }[e.acq_func.name](gp, e.acq_func)
         bo = BayesianOptimization(acq, space)
-        recs, acqs = bo.recommend(e.n_recs)
-        rec = encode_recommendation(recs[acqs.argmax()], dims)
+        rec = encode_recommendation(bo.recommend(e.n_recs), dims)
 
     # Submit recommendation to user and store in the Thor database. It is
     # created initially without a response and is marked as pending.
@@ -111,16 +112,17 @@ def submit_recommendation(user):
 def pending_recommendations(user):
     # Extract experiment.
     experiment_id = request.json["experiment_id"]
-    exp = user.experiments.query.filter(Experiment.id==experiment_id).first()
+    exp = user.experiments.filter(Experiment.id==experiment_id).first()
 
     if exp:
-        pending_obs = exp.observations.filter(Observation.pending==False).all()
-        return jsonify([o.to_json() for o in pending_obs])
+        pending_obs = exp.observations.filter(Observation.pending==True).all()
+        return jsonify([o.to_dict() for o in pending_obs])
     else:
         err = {
             "error": "Experiment with identifier {} does not exist.".format(
                 experiment_id
             )
         }
+        print(err)
         return (jsonify(err), status.HTTP_400_BAD_REQUEST)
 

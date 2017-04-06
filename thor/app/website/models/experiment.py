@@ -16,7 +16,11 @@ class Experiment(db.Model):
     date = db.Column(db.DateTime)
     n_recs= db.Column(db.Integer)
     n_restarts = db.Column(db.Integer)
-    acq_func = db.Column(db.String(80))
+    # acq_func = db.Column(db.String(80))
+    acq_func = db.relationship(
+        "AcquisitionFunction",
+        uselist=False
+    )
     dimensions = db.relationship(
         "Dimension",
         lazy="dynamic",
@@ -30,12 +34,11 @@ class Experiment(db.Model):
         cascade="all, delete-orphan"
     )
 
-    def __init__(self, name, date, n_recs, n_restarts, acq_func):
+    def __init__(self, name, date, n_recs, n_restarts):
         self.name = name
         self.date = date
         self.n_recs = n_recs
         self.n_restarts = n_restarts
-        self.acq_func = acq_func
 
     def to_dict(self):
         dims = [d.to_dict() for d in self.dimensions.all()]
@@ -45,7 +48,6 @@ class Experiment(db.Model):
             "dimensions": dims,
             "n_recs": self.n_recs,
             "n_restarts": self.n_restarts,
-            "acq_func": self.acq_func,
             "id": self.id
         }
 
@@ -57,8 +59,7 @@ class Experiment(db.Model):
         n_dims = len(dims)
         n_recs = json.get("n_recs", 10*n_dims)
         n_restarts = json.get("n_restarts", 10*n_dims)
-        acq_func = json.get("acq_func", "expected_improvement")
-        e = cls(name, date, n_recs, n_restarts, acq_func)
+        e = cls(name, date, n_recs, n_restarts)
         for d in dims:
             e.dimensions.append(Dimension.from_json(d))
 

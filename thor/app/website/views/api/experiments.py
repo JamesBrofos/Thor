@@ -3,7 +3,7 @@ from flask import Blueprint
 from flask import request, jsonify
 from flask_api import status
 from ...utils import require_apikey
-from ...models import Experiment, Dimension
+from ...models import Experiment, Dimension, AcquisitionFunction
 from ... import db
 
 
@@ -27,6 +27,7 @@ def create_experiment(user):
     else:
         # Create an experiment for this user.
         e = Experiment.from_json(request.json)
+        e.acq_func = AcquisitionFunction.from_json(request.json)
         user.experiments.append(e)
 
         db.session.commit()

@@ -16,7 +16,7 @@ try:
         {"name": "y", "dim_type": "linear", "low": 0., "high": 1.}
     ]
     exp = ec.create_experiment(
-        "Franke Function",
+        "Parallel Franke Function",
         dims,
         50,
         50,
@@ -25,9 +25,9 @@ try:
 except ValueError:
     exp = ec.experiment_for_name("Franke Function")
 
-for i in range(30):
+for i in range(5):
     rec = exp.create_recommendation()
-    x = rec.config
-    val = franke(np.array([x["x"], x["y"]]))
-    rec.submit_recommendation(val)
-    print((i, x, val))
+
+# Query for the pending recommendations.
+pending = exp.pending_recommendations()
+print(pending)

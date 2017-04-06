@@ -27,6 +27,18 @@ class ExperimentClient(object):
         )
         return json_parser(result, self.auth_token, RecommendationClient)
 
+    def pending_recommendations(self):
+        """Query for pending recommendations that have yet to be evaluated."""
+        post_data = {
+            "auth_token": self.auth_token,
+            "experiment_id": self.experiment_id
+        }
+        result = requests.post(
+            url=base_url.format("pending_recommendations"),
+            json=post_data
+        )
+        return json_parser(result, self.auth_token, RecommendationClient)
+
     @classmethod
     def from_dict(cls, dictionary, auth_token):
         """Create an experiment object from a dictionary representation. Pass
