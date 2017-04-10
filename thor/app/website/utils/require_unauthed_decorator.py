@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import flash, redirect, url_for, abort
-from flask.ext.login import current_user
+from flask_login import current_user
 
 
 def require_unauthed(func):

@@ -14,12 +14,12 @@ class Experiment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     name = db.Column(db.String(80))
     date = db.Column(db.DateTime)
-    n_recs= db.Column(db.Integer)
-    n_restarts = db.Column(db.Integer)
     # acq_func = db.Column(db.String(80))
     acq_func = db.relationship(
         "AcquisitionFunction",
-        uselist=False
+        uselist=False,
+        backref="experiments",
+        cascade="all, delete-orphan"
     )
     dimensions = db.relationship(
         "Dimension",
@@ -34,11 +34,9 @@ class Experiment(db.Model):
         cascade="all, delete-orphan"
     )
 
-    def __init__(self, name, date, n_recs, n_restarts):
+    def __init__(self, name, date):
         self.name = name
         self.date = date
-        self.n_recs = n_recs
-        self.n_restarts = n_restarts
 
     def to_dict(self):
         dims = [d.to_dict() for d in self.dimensions.all()]
@@ -46,8 +44,6 @@ class Experiment(db.Model):
             "name": self.name,
             "date": self.date,
             "dimensions": dims,
-            "n_recs": self.n_recs,
-            "n_restarts": self.n_restarts,
             "id": self.id
         }
 
@@ -56,10 +52,7 @@ class Experiment(db.Model):
         date = dt.datetime.today()
         name = json["name"]
         dims = json["dimensions"]
-        n_dims = len(dims)
-        n_recs = json.get("n_recs", 10*n_dims)
-        n_restarts = json.get("n_restarts", 10*n_dims)
-        e = cls(name, date, n_recs, n_restarts)
+        e = cls(name, date)
         for d in dims:
             e.dimensions.append(Dimension.from_json(d))
 

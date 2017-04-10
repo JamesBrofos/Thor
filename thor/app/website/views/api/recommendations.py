@@ -2,15 +2,7 @@ import datetime as dt
 import numpy as np
 from flask import Blueprint, request, jsonify
 from flask_api import status
-from thor.acquisitions import (
-    ExpectedImprovement,
-    UpperConfidenceBound,
-    ImprovementProbability,
-    HedgeAcquisition
-)
-from thor.models.tuning import fit_marginal_likelihood
 from thor.optimization import BayesianOptimization
-from thor.kernels import MaternKernel, NoiseKernel, SumKernel
 from ...models import Experiment, Observation
 from ... import db
 from ...utils import (
@@ -35,45 +27,24 @@ def create_recommendation(user):
     dims = e.dimensions.all()
     space = create_space(dims)
     # Number of randomly positioned observations to create.
-    n_random = 5 * len(dims)
+    n_random = 1 * len(dims)
 
     # Either use Bayesian optimization or generate a random point depending on
     # the number of observations collected so far.
-    if e.observations.count() <= n_random:
+    if e.observations.count() < n_random:
         rec = encode_recommendation(space.sample().ravel(), dims)
     else:
         # Get pending and non-pending observations.
         observed = e.observations.filter(Observation.pending==False).all()
         pending = e.observations.filter(Observation.pending==True).all()
-        # Do Bayesian optimization.
         X, y = decode_recommendation(observed, dims)
-        n, k = X.shape
-        # Create kernel.
-        kernel = MaternKernel(np.nan, np.full((k, ), np.nan))
-        # First fit the Gaussian process using observed data.
-        prior_mean = 0.
-        gp = fit_marginal_likelihood(
-            X, y, e.n_restarts, kernel, prior_mean
+        X_pending = (
+            decode_recommendation(pending, dims)[0]
+            if len(pending) > 0 else None
         )
-        # Create fantasy observations for the pending values.
-        if len(pending) > 0:
-            # Decode the pending observations.
-            X_pending, _ = decode_recommendation(pending, dims)
-            # Sample from the predictive posterior.
-            y_pending = gp.sample(X_pending)
-            # Retrain Gaussian process.
-            X = np.vstack((X, X_pending))
-            y = np.append(y, y_pending)
-            gp.fit(X, y)
-
-        acq = {
-            "expected_improvement": ExpectedImprovement,
-            "improvement_probability": ImprovementProbability,
-            "upper_confidence_bound": UpperConfidenceBound,
-            "hedge": HedgeAcquisition
-        }[e.acq_func.name](gp, e.acq_func)
-        bo = BayesianOptimization(acq, space)
-        rec = encode_recommendation(bo.recommend(e.n_recs), dims)
+        # Create a recommendation with Bayesian optimization.
+        bo = BayesianOptimization(e, space)
+        rec = encode_recommendation(bo.recommend(X, y, X_pending), dims)
 
     # Submit recommendation to user and store in the Thor database. It is
     # created initially without a response and is marked as pending.

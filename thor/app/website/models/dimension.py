@@ -1,4 +1,9 @@
-from thor.space import LinearDimension, IntegerDimension, LogarithmicDimension
+from thor.space import (
+    LinearDimension,
+    IntegerDimension,
+    LogarithmicDimension,
+    ExponentialDimension
+)
 from .. import db
 
 
@@ -32,7 +37,8 @@ class Dimension(db.Model):
         dim_class = {
             "linear": LinearDimension,
             "integer": IntegerDimension,
-            "logarithmic": LogarithmicDimension
+            "logarithmic": LogarithmicDimension,
+            "exponential": ExponentialDimension
         }[self.dim_type]
         return dim_class(self.low, self.high)
 

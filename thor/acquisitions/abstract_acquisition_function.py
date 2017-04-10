@@ -10,7 +10,7 @@ class AbstractAcquisitionFunction(object):
         self.db_acq = db_acq
 
     @abstractmethod
-    def maximize(self, n_evals):
+    def maximize(self):
         """Compute the acquisition using the estimated model at the locations in
         a matrix of query locations.
         """

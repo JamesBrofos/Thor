@@ -58,7 +58,8 @@ class BayesianNeuralNetwork(object):
         post-hoc Bayesian linear regression layer.
         """
         # Extract number of observations and number of input space features.
-        n, k = X.shape
+        self.X, self.y = X, y
+        n, k = self.X.shape
         # Construct the neural network model.
         n_hidden = 50
         model = Sequential()
@@ -68,11 +69,11 @@ class BayesianNeuralNetwork(object):
         model.add(Dense(1, activation="linear"))
         # Compile model and train the model.
         model.compile(
-            loss='mean_squared_error',
-            optimizer='adam',
+            loss="mean_squared_error",
+            optimizer="adam",
             metrics=[]
         )
-        model.fit(X, y, epochs=self.n_epochs, batch_size=int(n / 10))
+        model.fit(self.X, self.y, epochs=self.n_epochs, batch_size=int(n / 10))
 
         # Build a proxy model for the purposes of obtaining the representation
         # in the final hidden layer of the network.
@@ -86,9 +87,9 @@ class BayesianNeuralNetwork(object):
             ))
 
         # Fit the Bayesian linear regression model.
-        R = self.proxy.predict(X)
+        R = self.proxy.predict(self.X)
         self.bayes_reg = BayesianLinearRegression(np.ones((n_hidden, )) * 100.)
-        self.bayes_reg.fit(R, y)
+        self.bayes_reg.fit(R, self.y)
 
     def predict(self, X_pred):
         """Predict using the neural network class at the provided inputs."""

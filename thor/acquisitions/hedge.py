@@ -10,32 +10,36 @@ class HedgeAcquisition(AbstractAcquisitionFunction):
     """Hedge Acquisition Function Class"""
     def __init__(self, model, db_acq, constituents=[
             ImprovementProbability, ExpectedImprovement, UpperConfidenceBound
-    ], nu=1.0):
+    ]):
         """Initialize parameters of the hedge acquisition function object."""
         super(HedgeAcquisition, self).__init__(model, db_acq)
         self.constituents = [acq(self.model, None) for acq in constituents]
         self.n_constituents = len(self.constituents)
-        self.weights = np.zeros((self.n_constituents, ))
-        self.nu = nu
         # Create an internal variable to recall which points were selected for
         # candidates at the previous iteration by each of the constituent
         # acquisition functions.
         try:
-            self.prev_X_select = np.array(json.loads(self.db_acq.params)["prev_X"])
+            D = json.loads(self.db_acq.params)
+            self.prev_X_select = np.array(D["prev_X"])
+            self.weights = np.array(D["weights"])
+            self.n_iters = D["n_iters"]
         except TypeError:
             self.prev_X_select = None
+            self.weights = np.zeros((self.n_constituents, ))
+            self.n_iters = 1
 
-    def maximize(self, n_evals):
+    def maximize(self):
         """Implementation of abstract base class method."""
         # Compute the candidate recommendations from each constituent
         # acquisition function.
-        X_select = np.atleast_2d(
-            [acq.maximize(n_evals) for acq in self.constituents]
-        )
+        X_select = np.atleast_2d([acq.maximize() for acq in self.constituents])
         if self.prev_X_select is not None:
             # Update the weights using the previously selected candidates but
             # before selecting the latest configuration to recommend.
-            self.weights += self.model.predict(self.prev_X_select)[0]
+            updates = self.model.predict(self.prev_X_select)[0]
+            # updates *= (updates >= self.model.y.max())
+            self.weights += updates
+            print(updates)
             print(self.__weights_to_probs())
 
         # Choose one of the candidates to evaluate.
@@ -44,13 +48,20 @@ class HedgeAcquisition(AbstractAcquisitionFunction):
         # Note that the location of this assignment matters. At the first
         # iteration, there will be no previous selection, but at the conclusion
         # of the call to maximize, there will be.
-        self.db_acq.params = json.dumps({"prev_X": X_select.tolist()})
+        self.db_acq.params = json.dumps({
+            "prev_X": X_select.tolist(),
+            "weights": self.weights.tolist(),
+            "n_iters": self.n_iters + 1
+        })
 
         return x_chosen
 
     def __weights_to_probs(self):
         """Convert the weights to a vector of probabilities in order to randomly
         select an acquisition function whose recommendation is chosen.
+        Probabilities are computed via a scaled softmax.
         """
-        e = np.exp(self.nu * self.weights)
+        nu = np.sqrt(8. * np.log(self.n_constituents) / self.n_iters)
+        w = nu * self.weights
+        e = np.exp(w - w.max())
         return e / e.sum()

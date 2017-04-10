@@ -39,9 +39,10 @@ class GaussianProcess(object):
             K_pred = self.kernel.cov(X_pred)
         K_cross = self.kernel.cov(X_pred, self.X)
         v = spla.solve_triangular(self.__L, K_cross.T, lower=True)
-        # Posterior inference.
+        # Posterior inference. Notice that we add a small amount of noise to the
+        # diagonal for regulatization purposes.
         mean = K_cross.dot(self.__alpha) + self.prior_mean
-        cov = K_pred - v.T.dot(v)
+        cov = K_pred - v.T.dot(v) + 1e-8 * np.eye(K_pred.shape[0])
         # Compute the diagonal of the covariance matrix if we wish to disregard
         # all of the covariance information and only focus on the variances at
         # the given inputs.

@@ -30,8 +30,8 @@
                <td>{{ dim.name }}</td>
                <td>{{ experiment.maximal_observation.config[dim.name]|round(8) }}</td>
                <td>{{ dim.dim_type.capitalize() }}</td>
-               <td>{{ dim.low }}</td>
-               <td>{{ dim.high }}</td>
+               <td>{{ dim.low|int if dim.dim_type == "integer" else dim.low }}</td>
+               <td>{{ dim.high|int if dim.dim_type == "integer" else dim.high }}</td>
             </tr>
             {% endfor %}
          </tbody>

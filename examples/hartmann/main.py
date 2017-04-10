@@ -22,8 +22,6 @@ try:
     exp = ec.create_experiment(
         "Hartmann 6-D",
         dims,
-        100,
-        100,
         "hedge"
     )
 except ValueError:

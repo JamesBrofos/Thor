@@ -65,6 +65,20 @@ class LogarithmicDimension(LinearDimension):
         return np.exp(super(LogarithmicDimension, self).invert(transformed_input))
 
 
+class ExponentialDimension(LinearDimension):
+    """Bayesian Optimization Exponential Dimension Class"""
+    def __init__(self, low, high):
+        super(ExponentialDimension, self).__init__(np.exp(low), np.exp(high))
+
+    def transform(self, original_input):
+        """Extension of base class method."""
+        return super(ExponentialDimension, self).transform(np.exp(original_input))
+
+    def invert(self, transformed_input):
+        """Extension of base class method."""
+        return np.log(super(ExponentialDimension, self).invert(transformed_input))
+
+
 class IntegerDimension(LinearDimension):
     """Bayesian Optimization Integer Dimension Class"""
     def __init__(self, low, high):
@@ -82,6 +96,4 @@ class IntegerDimension(LinearDimension):
                     transformed_input <= self.delta[i + 1]
             ):
                 return self.integers[i]
-
-
 

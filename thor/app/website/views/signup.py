@@ -46,7 +46,7 @@ def confirm_email(token):
         abort(404)
 
     user = User.query.filter_by(email=email).first_or_404()
-    user.email_confirmed = True
+    user.confirmed = True
     db.session.commit()
 
     flash("Successfuly confirmed {}.".format(email), "success")

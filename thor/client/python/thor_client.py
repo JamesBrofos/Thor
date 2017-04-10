@@ -11,14 +11,12 @@ class ThorClient(object):
         """Initialize the parameters of the Thor API client."""
         self.auth_token = auth_token
 
-    def create_experiment(self, name, dimensions, n_recs, n_restarts, acq_func):
+    def create_experiment(self, name, dimensions, acq_func):
         """Create an experiment."""
         post_data = {
             "name": name,
             "auth_token": self.auth_token,
             "dimensions": dimensions,
-            "n_recs": n_recs,
-            "n_restarts": n_restarts,
             "acq_func": acq_func
         }
         result = requests.post(
