@@ -42,7 +42,7 @@ class AbstractGradientAcquisitionFunction(AbstractAcquisitionFunction):
 
         return x_max.ravel(), self.evaluate(x_max)
 
-    def maximize(self):
+    def select(self):
         """Implementation of abstract base class method."""
         # Initialize the best acquisition value to negative infinity. This will
         # allow any fit of the data to be better.

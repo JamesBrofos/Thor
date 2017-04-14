@@ -1,12 +1,11 @@
 import numpy as np
+from multiprocessing import Pool
 from thor_client import ThorClient
 from thor.evaluation import franke
 
 
 # Authentication token.
 auth_token = "$2b$12$xSc4ji2UJy96N.vPOlM/iOR.OBJ3BKmhgSU60/8Asi8YfI6pPbB8."
-
-
 # Create experiment.
 tc = ThorClient(auth_token)
 name = "Franke Function"
@@ -21,18 +20,17 @@ except ValueError:
     exp = tc.experiment_for_name(name)
 
 
-# Main optimization loop.
-for i in range(30):
-    rec = exp.create_recommendation()
-    x = rec.config
-    val = franke(np.array([x["x"], x["y"]]))
-    rec.submit_recommendation(val)
-    print((i, x, val))
+def parallel_opt(exp):
+    # Main optimization loop.
+    for i in range(30):
+        rec = exp.create_recommendation()
+        x = rec.config
+        val = franke(np.array([x["x"], x["y"]]))
+        rec.submit_recommendation(val)
+        print((i, x, val))
 
-# Get best configuration.
-print("Best configuration:")
-print(exp.best_configuration())
+    return exp.best_configuration()
 
-# Submit an arbitrary observation.
-o = np.random.uniform(size=(2, ))
-exp.submit_observation({"x": o[0], "y": o[1]}, franke(o))
+# Parallel optimization in Python.
+p = Pool(2)
+print(p.map(parallel_opt, [exp, exp]))

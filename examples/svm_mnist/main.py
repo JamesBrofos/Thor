@@ -1,4 +1,4 @@
-from thor.client.python import ThorClient
+from thor_client import ThorClient
 from evaluate import evaluate
 
 # Authentication token.

@@ -4,12 +4,16 @@ from .abstract_acquisition_function import AbstractAcquisitionFunction
 from .improvement_probability import ImprovementProbability
 from .expected_improvement import ExpectedImprovement
 from .upper_confidence_bound import UpperConfidenceBound
+from .pure_exploration import PureExploration
 
 
 class HedgeAcquisition(AbstractAcquisitionFunction):
     """Hedge Acquisition Function Class"""
     def __init__(self, model, db_acq, constituents=[
-            ImprovementProbability, ExpectedImprovement, UpperConfidenceBound
+            ImprovementProbability,
+            ExpectedImprovement,
+            UpperConfidenceBound,
+            PureExploration
     ]):
         """Initialize parameters of the hedge acquisition function object."""
         super(HedgeAcquisition, self).__init__(model, db_acq)
@@ -28,16 +32,15 @@ class HedgeAcquisition(AbstractAcquisitionFunction):
             self.weights = np.zeros((self.n_constituents, ))
             self.n_iters = 1
 
-    def maximize(self):
+    def select(self):
         """Implementation of abstract base class method."""
         # Compute the candidate recommendations from each constituent
         # acquisition function.
-        X_select = np.atleast_2d([acq.maximize() for acq in self.constituents])
+        X_select = np.atleast_2d([acq.select() for acq in self.constituents])
         if self.prev_X_select is not None:
             # Update the weights using the previously selected candidates but
             # before selecting the latest configuration to recommend.
             updates = self.model.predict(self.prev_X_select)[0]
-            # updates *= (updates >= self.model.y.max())
             self.weights += updates
             print(updates)
             print(self.__weights_to_probs())

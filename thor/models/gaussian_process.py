@@ -60,7 +60,7 @@ class GaussianProcess(object):
         # If there is noise in the kernel, make sure we are sampling from the
         # predictive distribution of the targets and not the mean.
         if type(self.kernel) == SumKernel:
-            cov += self.kernel.noise_kernel.cov(X_pred)
+            cov += self.kernel.noise_kernel.cov(X)
 
         return np.random.multivariate_normal(mean, cov)
 

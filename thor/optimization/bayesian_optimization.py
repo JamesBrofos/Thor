@@ -1,10 +1,5 @@
 import numpy as np
-from thor.acquisitions import (
-    ExpectedImprovement,
-    UpperConfidenceBound,
-    ImprovementProbability,
-    HedgeAcquisition
-)
+from thor.acquisitions import acq_dict
 from thor.kernels import MaternKernel, NoiseKernel, SumKernel
 from thor.models.tuning import fit_marginal_likelihood
 from thor.models import BayesianNeuralNetwork
@@ -16,15 +11,6 @@ class BayesianOptimization(object):
         """Initialize parameters of the Bayesian optimization object."""
         self.experiment = experiment
         self.space = space
-
-    def construct_acquisition(self, model):
-        acq = self.experiment.acq_func
-        return {
-            "expected_improvement": ExpectedImprovement,
-            "improvement_probability": ImprovementProbability,
-            "upper_confidence_bound": UpperConfidenceBound,
-            "hedge": HedgeAcquisition
-        }[acq.name](model, acq)
 
     def recommend(self, X, y, X_pending):
         """Choose points to evaluate from the parameter space based on Bayesian
@@ -39,6 +25,11 @@ class BayesianOptimization(object):
         # Change behavior depending on whether or not the experiment is large
         # scale.
         n_shift = 500
+        # Construct acquisition function or perform random search if necessary.
+        if self.experiment.acq_func.name == "random":
+            return self.space.sample().ravel()
+        else:
+            acq = acq_dict[self.experiment.acq_func.name]
 
         # Nota bene: We will select in this piece of code the number of random
         # restarts used in the estimation of the Gaussian process (if indeed we
@@ -68,7 +59,7 @@ class BayesianOptimization(object):
             model.fit(X, y)
 
         # Create fantasy observations for the pending values.
-        if X_pending:
+        if X_pending is not None:
             # Sample from the predictive posterior.
             n_pending = X_pending.shape[0]
             for i in range(n_pending):
@@ -77,10 +68,20 @@ class BayesianOptimization(object):
             # Retrain Gaussian process.
             X = np.vstack((X, X_pending))
             y = np.append(y, y_pending)
-            model.fit(X, y)
+            print("Pending")
+            print(X_pending)
+            print(y_pending)
+            try:
+                model.fit(X, y)
+            except np.linalg.linalg.LinAlgError:
+                print("Retraining model with pending data.")
+                dom_kernel = MaternKernel(np.nan, np.full((k, ), np.nan))
+                noise_kernel = NoiseKernel(np.nan)
+                kernel = SumKernel([dom_kernel], noise_kernel)
+                model = fit_marginal_likelihood(X, y, n_restarts, kernel, pm)
 
-        # Construct the acquisition function.
-        acq = self.construct_acquisition(model)
         # Compute a recommendation from the Bayesian optimization algorithm.
-        return self.space.invert(acq.maximize())
+        return self.space.invert(
+            acq(model, self.experiment.acq_func).select()
+        )
 
