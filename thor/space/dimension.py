@@ -92,7 +92,7 @@ class IntegerDimension(LinearDimension):
         """Implementation of abstract base class method."""
         for i in range(self.n_integers):
             if (
-                    transformed_input > self.delta[i] and
+                    transformed_input >= self.delta[i] and
                     transformed_input <= self.delta[i + 1]
             ):
                 return self.integers[i]
