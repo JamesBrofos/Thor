@@ -38,6 +38,8 @@ class GaussianProcess(object):
         else:
             K_pred = self.kernel.cov(X_pred)
         K_cross = self.kernel.cov(X_pred, self.X)
+        # print(self.__L)
+        # print(K_cross.T)
         v = spla.solve_triangular(self.__L, K_cross.T, lower=True)
         # Posterior inference. Notice that we add a small amount of noise to the
         # diagonal for regulatization purposes.
