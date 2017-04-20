@@ -85,11 +85,12 @@ class GaussianProcess(object):
         # Helpful matrices (avoids need to recompute).
         A = np.outer(self.__alpha, self.__alpha)
         D = A - self.__K_inv
+        n = D.shape[0]
         # Define log-likelihood gradient dictionary.
         ll_grad = {}
         # Compute and return gradients.
         for p, grad in grad_params.items():
-            ll_grad[p] = np.atleast_1d(0.5 * np.trace(D.dot(grad)))
+            ll_grad[p] = np.atleast_1d(0.5 * np.trace(D.dot(grad))) / n
 
         return ll_grad
 
