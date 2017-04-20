@@ -5,18 +5,18 @@ from ..gaussian_process import GaussianProcess
 from ...kernels.squared_exponential_kernel import SquaredExponentialKernel
 
 
-def __negative_marginal_likelihood(params, X, y, kernel, prior_mean):
+def __negative_marginal_likelihood(params, X, y, kernel):
     # Create Gaussian process.
     kernel.update(params)
-    gp = GaussianProcess(kernel, prior_mean)
+    gp = GaussianProcess(kernel)
     gp.fit(X, y)
 
     return -1. * gp.log_likelihood()
 
-def __negative_marginal_likelihood_grad(params, X, y, kernel, prior_mean):
+def __negative_marginal_likelihood_grad(params, X, y, kernel):
     # Create Gaussian process.
     kernel.update(params)
-    gp = GaussianProcess(kernel, prior_mean)
+    gp = GaussianProcess(kernel)
     gp.fit(X, y)
     # Compute the gradient and make sure that the gradient with respect to the
     # length scales is treated as an array.
@@ -28,7 +28,7 @@ def __negative_marginal_likelihood_grad(params, X, y, kernel, prior_mean):
 
 
 def fit_marginal_likelihood(
-        X, y, n_restarts, kernel, prior_mean
+        X, y, n_restarts, kernel
 ):
         """Fit the parameters of the Gaussian process by maximizing the marginal
         log-likelihood of the data.
@@ -53,7 +53,7 @@ def fit_marginal_likelihood(
                     __negative_marginal_likelihood,
                     init_params,
                     fprime=__negative_marginal_likelihood_grad,
-                    args=(X, y, kernel, prior_mean),
+                    args=(X, y, kernel),
                     bounds=bounds,
                     disp=0
                 )
@@ -67,7 +67,7 @@ def fit_marginal_likelihood(
             else:
                 # Update kernel parameters.
                 kernel.update(bfgs_params)
-                gp = GaussianProcess(kernel, prior_mean)
+                gp = GaussianProcess(kernel)
                 gp.fit(X, y)
 
                 # Keep track of the kernel parameters corresponding to the best
@@ -81,7 +81,7 @@ def fit_marginal_likelihood(
         # Set the parameters of the Gaussian process according to the kernel
         # parameters.
         kernel.update(best_params)
-        gp = GaussianProcess(kernel, prior_mean)
+        gp = GaussianProcess(kernel)
         gp.fit(X, y)
 
         # Return the Gaussian process whose kernel parameters were estimated via

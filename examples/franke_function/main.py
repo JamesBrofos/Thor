@@ -4,7 +4,7 @@ from thor.evaluation import franke
 
 
 # Authentication token.
-auth_token = "$2b$12$xSc4ji2UJy96N.vPOlM/iOR.OBJ3BKmhgSU60/8Asi8YfI6pPbB8."
+auth_token = "$2b$12$.wA/rDDnUeNFoXOxBcJ6ze2ZzIF16ThQMM8hPfvuTwtTwZYVDlpXK"
 
 
 # Create experiment.

@@ -5,17 +5,16 @@ from ..kernels import SumKernel
 
 class GaussianProcess(object):
     """Gaussian Process Class"""
-    def __init__(self, kernel, prior_mean=0.):
+    def __init__(self, kernel):
         """Initialize the parameters of the Gaussian process object."""
         self.kernel = kernel
-        self.prior_mean = prior_mean
 
     def fit(self, X, y):
         """Estimate the parameters of the Gaussian process based on available
         training data.
         """
         # Store the training data (both the inputs and the targets).
-        self.X, self.y = X, y - self.prior_mean
+        self.X, self.y = X, y
         # Compute the covariance matrix of the observed inputs.
         K = self.kernel.cov(self.X)
         # For a numerically stable algorithm, we use Cholesky decomposition.
@@ -38,12 +37,10 @@ class GaussianProcess(object):
         else:
             K_pred = self.kernel.cov(X_pred)
         K_cross = self.kernel.cov(X_pred, self.X)
-        # print(self.__L)
-        # print(K_cross.T)
         v = spla.solve_triangular(self.__L, K_cross.T, lower=True)
         # Posterior inference. Notice that we add a small amount of noise to the
         # diagonal for regulatization purposes.
-        mean = K_cross.dot(self.__alpha) + self.prior_mean
+        mean = K_cross.dot(self.__alpha)
         cov = K_pred - v.T.dot(v) + 1e-8 * np.eye(K_pred.shape[0])
         # Compute the diagonal of the covariance matrix if we wish to disregard
         # all of the covariance information and only focus on the variances at
