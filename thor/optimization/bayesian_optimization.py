@@ -1,8 +1,8 @@
 import numpy as np
 from thor.acquisitions import acq_dict
 from thor.kernels import MaternKernel, NoiseKernel, SumKernel
-from thor.models.tuning import fit_marginal_likelihood
-from thor.models import BayesianNeuralNetwork
+from thor.models.abstract_process import fit_marginal_likelihood
+from thor.models import BayesianNeuralNetwork, StudentProcess, GaussianProcess
 
 
 class BayesianOptimization(object):
@@ -30,10 +30,12 @@ class BayesianOptimization(object):
             noise_kernel = NoiseKernel(np.nan)
             sum_kernel = SumKernel([dom_kernel], noise_kernel)
             try:
-                model = fit_marginal_likelihood(X, y, n_model_iters, dom_kernel)
+                model = fit_marginal_likelihood(
+                    X, y, n_model_iters, dom_kernel, StudentProcess
+                )
             except UnboundLocalError:
                 model = fit_marginal_likelihood(
-                    X, y, n_model_iters, sum_kernel
+                    X, y, n_model_iters, sum_kernel, StudentProcess
                 )
         else:
             # Use Bayesian neural networks for large-scale problems.
