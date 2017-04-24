@@ -12,14 +12,12 @@ class BayesianOptimization(object):
         self.experiment = experiment
         self.space = space
 
-    def __fit_surrogate(self, X, y, n_model_iters):
+    def __fit_surrogate(self, X, y, model_class, n_model_iters):
         # Extract data size.
         n, k = X.shape
         # Change behavior depending on whether or not the experiment is large
         # scale.
         n_shift = 500
-        # Set the kind of probabilistic surrogate model to use.
-        model_class = GaussianProcess
 
         # Nota bene: We will select in this piece of code the number of random
         # restarts used in the estimation of the Gaussian process (if indeed we
@@ -49,7 +47,7 @@ class BayesianOptimization(object):
 
         return model
 
-    def recommend(self, X, y, X_pending, n_model_iters):
+    def recommend(self, X, y, X_pending, model_class, n_model_iters):
         """Choose points to evaluate from the parameter space based on Bayesian
         optimization. This function uses multiple random restarts in the unit
         hypercube in order to identify local maxima of the acquisition function.
@@ -62,7 +60,7 @@ class BayesianOptimization(object):
         # Construct acquisition function.
         acq = acq_dict[self.experiment.acq_func.name]
         # Estimate the probabilistic surrogate model.
-        model = self.__fit_surrogate(X, y, n_model_iters)
+        model = self.__fit_surrogate(X, y, model_class, n_model_iters)
 
         # Create fantasy observations for the pending values.
         if X_pending is not None:
@@ -77,7 +75,7 @@ class BayesianOptimization(object):
             try:
                 model.fit(X, y)
             except:
-                model = self.__fit_surrogate(X, y, n_model_iters)
+                model = self.__fit_surrogate(X, y, model_class, n_model_iters)
 
         # Compute a recommendation from the Bayesian optimization algorithm.
         return self.space.invert(
