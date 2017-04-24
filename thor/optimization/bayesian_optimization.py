@@ -18,6 +18,8 @@ class BayesianOptimization(object):
         # Change behavior depending on whether or not the experiment is large
         # scale.
         n_shift = 500
+        # Set the kind of probabilistic surrogate model to use.
+        model_class = GaussianProcess
 
         # Nota bene: We will select in this piece of code the number of random
         # restarts used in the estimation of the Gaussian process (if indeed we
@@ -31,11 +33,11 @@ class BayesianOptimization(object):
             sum_kernel = SumKernel([dom_kernel], noise_kernel)
             try:
                 model = fit_marginal_likelihood(
-                    X, y, n_model_iters, dom_kernel, StudentProcess
+                    X, y, n_model_iters, dom_kernel, model_class
                 )
             except UnboundLocalError:
                 model = fit_marginal_likelihood(
-                    X, y, n_model_iters, sum_kernel, StudentProcess
+                    X, y, n_model_iters, sum_kernel, model_class
                 )
         else:
             # Use Bayesian neural networks for large-scale problems.

@@ -13,7 +13,6 @@ class HedgeAcquisition(AbstractAcquisitionFunction):
             ImprovementProbability,
             ExpectedImprovement,
             UpperConfidenceBound,
-            PureExploration
     ]):
         """Initialize parameters of the hedge acquisition function object."""
         super(HedgeAcquisition, self).__init__(model, db_acq)
