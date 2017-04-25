@@ -1,4 +1,5 @@
 import numpy as np
+import sobol_seq
 from scipy.optimize import fmin_l_bfgs_b
 from abc import ABCMeta, abstractmethod
 from .abstract_acquisition_function import AbstractAcquisitionFunction
@@ -14,7 +15,7 @@ class AbstractGradientAcquisitionFunction(AbstractAcquisitionFunction):
     def __negative_acquisition_function_grad(self, params):
         return -self.grad_input(np.atleast_2d(params))
 
-    def __maximize(self):
+    def __maximize(self, index):
         """Helper function that leverages the BFGS algorithm with a bounded
         input space in order to converge the maximum of the acquisition function
         using gradient ascent. Notice that this function returns the point in
@@ -22,7 +23,8 @@ class AbstractGradientAcquisitionFunction(AbstractAcquisitionFunction):
         """
         # Number of dimensions.
         k = self.model.X.shape[1]
-        x = np.random.uniform(low=0., high=1., size=(1, k))
+        # x = np.random.uniform(low=0., high=1., size=(1, k))
+        x = sobol_seq.i4_sobol(k, index+1)[0]
         try:
             # Bounds on the search space used by the BFGS algorithm.
             bounds = [(0., 1.)] * k
@@ -53,7 +55,7 @@ class AbstractGradientAcquisitionFunction(AbstractAcquisitionFunction):
         # acquisition function using random search or randomly initialized
         # gradient ascent.
         for i in range(n_evals):
-            x, val = self.__maximize()
+            x, val = self.__maximize(i)
             # When a better maximizer of the acquisition function is found, make
             # note of it.
             if val > best_acq:
