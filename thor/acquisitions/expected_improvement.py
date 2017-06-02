@@ -4,15 +4,23 @@ from .improvement_acquisition_function import ImprovementAcquisitionFunction
 
 
 class ExpectedImprovement(ImprovementAcquisitionFunction):
-    """Expected Improvement Acquisition Function Class"""
-    def __init__(self, model, db_acq, y_best=None):
-        """Initialize parameters of the expected improvement acquisition
-        function.
-        """
-        super(ExpectedImprovement, self).__init__(
-            model, db_acq, y_best=y_best
-        )
+    """Expected Improvement Acquisition Function Class
 
+    The expected improvement acquisition function, like the probability of
+    improvement, similarly relies on the concept of improvement: That is, the
+    extent to which the metric of interest can be expected under the posterior
+    to exceed the current observed maximum. The expected improvement does not
+    merely accumulate the probability density above the best value of the
+    metric, however; instead, it weights each hyperparameter configuration
+    according to the extent of the improvement. Therefore, improvement must not
+    only be likely, but it must also be substantive.
+
+    In practice, the expected improvement has been shown to out perform the
+    upper confidence bound and probability of improvement acquisition functions.
+    It is less likely to exploit local maxima than the probability of
+    improvement is, and does not rely on its own hyperparameters unlike the
+    upper confidence bound.
+    """
     def evaluate(self, X):
         """Implementation of abstract base class method."""
         gamma, mean, sd = self.score(X)

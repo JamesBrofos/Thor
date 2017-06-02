@@ -25,6 +25,9 @@ class Space(object):
         space. Notice that this function will produce random samples from the
         original space, not the unit hypercube.
 
+        TODO: Should there be an internal variable for keeping track of which
+        randomly generated Sobol point should be generated?
+
         Parameters:
             n_samples (integer, optional): The number of random samples to
                 generate. By default, only a single sample will be generated.

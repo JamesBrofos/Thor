@@ -104,7 +104,11 @@ class LinearDimension(Dimension):
 
 
 class LogarithmicDimension(LinearDimension):
-    """Bayesian Optimization Logarithmic Dimension Class"""
+    """Bayesian Optimization Logarithmic Dimension Class
+
+    This class implements a dimension of logarithmically spaced points on a
+    continuum between a low point and a high point.
+    """
     def __init__(self, low, high):
         super(LogarithmicDimension, self).__init__(np.log(low), np.log(high))
 
@@ -118,7 +122,11 @@ class LogarithmicDimension(LinearDimension):
 
 
 class ExponentialDimension(LinearDimension):
-    """Bayesian Optimization Exponential Dimension Class"""
+    """Bayesian Optimization Exponential Dimension Class
+
+    This class implements a dimension of exponentially spaced points on a
+    continuum between a low point and a high point.
+    """
     def __init__(self, low, high):
         super(ExponentialDimension, self).__init__(np.exp(low), np.exp(high))
 
