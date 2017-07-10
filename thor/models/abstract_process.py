@@ -113,13 +113,6 @@ class AbstractProcess(object):
         return d_mean, d_sd
 
     @abstractmethod
-    def sample(self, X):
-        """Sample target variables from the predictive posterior distribution of
-        the probabilistic process.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
     def log_likelihood(self):
         """Compute the log-likelihood of the data under the probabilistic
         process model with the given length scales, amplitude, and noise level
