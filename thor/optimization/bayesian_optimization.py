@@ -1,8 +1,16 @@
 import numpy as np
-from thor.acquisitions import acq_dict
-from thor.kernels import MaternKernel, NoiseKernel, SumKernel
-from thor.models.abstract_process import fit_marginal_likelihood
-from thor.models import BayesianNeuralNetwork, StudentProcess, GaussianProcess
+# from thor.acquisitions import acq_dict
+# from thor.kernels import MaternKernel, NoiseKernel, SumKernel
+# from thor.models.abstract_process import fit_marginal_likelihood
+# from thor.models import BayesianNeuralNetwork, StudentProcess, GaussianProcess
+from sif.acquisitions import ExpectedImprovement
+from sif.models import GaussianProcess
+from sif.kernels import MaternKernel
+from sif.samplers import EllipticalSliceSampler
+
+acq_dict = {
+    "expected_improvement": ExpectedImprovement,
+}
 
 
 class BayesianOptimization(object):
@@ -42,7 +50,7 @@ class BayesianOptimization(object):
         self.experiment = experiment
         self.space = space
 
-    def __fit_surrogate(self, X, y, model_class, n_model_iters):
+    def __fit_surrogate(self, X, y, model_class, n_models):
         """This function actually returns the model after its parameters have
         been estimated. For Gaussian processes, fitting the model means
         estimating the length scales, amplitude, and noise level of the kernel
@@ -51,39 +59,50 @@ class BayesianOptimization(object):
         """
         # Extract data size.
         n, k = X.shape
-        # Change behavior depending on whether or not the experiment is large
-        # scale.
-        n_shift = 500
 
-        # Nota bene: We will select in this piece of code the number of random
-        # restarts used in the estimation of the Gaussian process (if indeed we
-        # are using a Gaussian process surrogate model), which is a function of
-        # the number of dimensions.
-        if n <= n_shift:
-            # Try to fit a noiseless model first, and then switch to a noisy
-            # model if the mathematics is numerically unstable.
-            dom_kernel = MaternKernel(np.nan, np.full((k, ), np.nan))
-            noise_kernel = NoiseKernel(np.nan)
-            sum_kernel = SumKernel([dom_kernel], noise_kernel)
-            try:
-                model = fit_marginal_likelihood(
-                    X, y, n_model_iters, dom_kernel, model_class
-                )
-            except UnboundLocalError:
-                model = fit_marginal_likelihood(
-                    X, y, n_model_iters, sum_kernel, model_class
-                )
-        else:
-            # Use Bayesian neural networks for large-scale problems.
-            # Nota bene: We are multiplying the number of model restarts by one
-            # thousand in order to produce the number of training epochs that
-            # should be performed.
-            model = BayesianNeuralNetwork(n_model_restarts * 100)
-            model.fit(X, y)
+        def log_likelihood_func(f):
+            """Create the Gaussian process object and a function to express the
+            log-likelihood of the data under a given specification of the
+            Gaussian process hyperparameters. Instead of using a squared
+            exponential kernel for the Gaussian process covariance, one might
+            instead consider using the Matern-5/2 kernel, which produces less
+            smooth interpolations.
+            """
+            gp = GaussianProcess(
+                MaternKernel(np.exp(f[:k]), np.exp(f[-3])), np.exp(f[-2]), f[-1]
+            )
+            gp.fit(X, y)
+            return gp.log_likelihood
 
-        return model
+        # Now use an elliptical slice sampler to draw samples from the Gaussian
+        # process posterior mean function given samples of the Gaussian process
+        # hyperparameters. In this example, we are sampling the kernel
+        # amplitude, its length scales (of which there is only one since this is
+        # a one-dimensional example), and the noise level of the process. We use
+        # relatively uninformative priors.
+        mean = np.zeros((k + 3, ))
+        covariance = np.diag(np.ones((k + 3, )) * 5.)
+        sampler = EllipticalSliceSampler(mean, covariance, log_likelihood_func)
+        samples = sampler.sample(n_models)
+        samples[:, :-1] = np.exp(samples[:, :-1])
 
-    def recommend(self, X, y, X_pending, model_class, n_model_iters):
+        # Now create an individual Gaussian process model for each setting of
+        # the kernel hyperparameters. This will allow us to integrate over the
+        # model uncertainty in order to take into account different
+        # interpretations of the data.
+        models = []
+        for i in range(n_models):
+            gp = GaussianProcess(
+                MaternKernel(samples[i, :k], samples[i, -3]),
+                samples[i, -2],
+                samples[i, -1]
+            )
+            gp.fit(X, y)
+            models.append(gp)
+
+        return models
+
+    def recommend(self, X, y, X_pending, model_class, n_models):
         """Choose points to evaluate from the parameter space based on Bayesian
         optimization. This function uses multiple random restarts in the unit
         hypercube in order to identify local maxima of the acquisition function.
@@ -105,10 +124,8 @@ class BayesianOptimization(object):
                 will be cubic in the number of observations; on the other hand,
                 if a Bayesian neural network object, then the runtime will be
                 only linear in the number of observations.
-            n_model_iters (int): If a Gaussian process object is used, this is
-                the number of random restarts used to estimate the kernel
-                parameters. If a Bayesian neural network is used, then this is
-                the number of training epochs to perform divided by one hundred.
+            n_models (int): If a Gaussian process object is used, this is the
+                number of hyperparameters from the posterior to sample.
         """
         # Extract data size.
         n, k = X.shape
@@ -118,7 +135,7 @@ class BayesianOptimization(object):
         # Construct acquisition function.
         acq = acq_dict[self.experiment.acq_func.name]
         # Estimate the probabilistic surrogate model.
-        model = self.__fit_surrogate(X, y, model_class, n_model_iters)
+        models = self.__fit_surrogate(X, y, model_class, n_models)
 
         # Create fantasy observations for the pending values.
         if X_pending is not None:
@@ -126,17 +143,16 @@ class BayesianOptimization(object):
             n_pending = X_pending.shape[0]
             for i in range(n_pending):
                 X_pending[i] = self.space.transform(X_pending[i])
-            y_pending = model.sample(X_pending)
+            y_pending = np.random.choice(models).sample(X_pending)
             # Retrain Gaussian process.
             X = np.vstack((X, X_pending))
             y = np.append(y, y_pending)
             try:
-                model.fit(X, y)
+                for i in range(n_models):
+                    models[i].fit(X, y)
             except:
-                model = self.__fit_surrogate(X, y, model_class, n_model_iters)
+                models = self.__fit_surrogate(X, y, model_class, n_models)
 
         # Compute a recommendation from the Bayesian optimization algorithm.
-        return self.space.invert(
-            acq(model, self.experiment.acq_func).select()
-        )
+        return self.space.invert(acq(models).select()[0])
 
