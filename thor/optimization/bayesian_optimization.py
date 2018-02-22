@@ -1,15 +1,12 @@
 import numpy as np
-# from thor.acquisitions import acq_dict
-# from thor.kernels import MaternKernel, NoiseKernel, SumKernel
-# from thor.models.abstract_process import fit_marginal_likelihood
-# from thor.models import BayesianNeuralNetwork, StudentProcess, GaussianProcess
-from sif.acquisitions import ExpectedImprovement
+from sif.acquisitions import ExpectedImprovement, ImprovementProbability
 from sif.models import GaussianProcess
 from sif.kernels import MaternKernel
 from sif.samplers import EllipticalSliceSampler
 
 acq_dict = {
     "expected_improvement": ExpectedImprovement,
+    "improvement_probability": ImprovementProbability,
 }
 
 
