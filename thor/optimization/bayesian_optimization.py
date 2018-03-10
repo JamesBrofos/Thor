@@ -80,7 +80,7 @@ class BayesianOptimization(object):
         mean = np.zeros((k + 3, ))
         covariance = np.diag(np.ones((k + 3, )) * 5.)
         sampler = EllipticalSliceSampler(mean, covariance, log_likelihood_func)
-        samples = sampler.sample(n_models)
+        samples = sampler.sample(n_models, 100 * k)
         samples[:, :-1] = np.exp(samples[:, :-1])
 
         # Now create an individual Gaussian process model for each setting of
@@ -151,5 +151,5 @@ class BayesianOptimization(object):
                 models = self.__fit_surrogate(X, y, model_class, n_models)
 
         # Compute a recommendation from the Bayesian optimization algorithm.
-        return self.space.invert(acq(models).select()[0])
+        return acq(models).select()[0]
 
