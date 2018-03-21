@@ -69,22 +69,51 @@ class BayesianOptimization(object):
             instead consider using the Matern-5/2 kernel, which produces less
             smooth interpolations.
             """
+            length_scales, amplitude, prior_mean = (
+                np.exp(f[:k]), np.exp(f[k]), f[-1]
+            )
+            noise_level = np.exp(f[-2]) if len(f) == k + 3 else 1e-6
             gp = GaussianProcess(
-                MaternKernel(np.exp(f[:k]), np.exp(f[-3])), np.exp(f[-2]), f[-1]
+                MaternKernel(length_scales, amplitude), noise_level, prior_mean
             )
             gp.fit(X, y)
             return gp.log_likelihood
 
+        # Determine the number of burn-in iterations of elliptical slice
+        # sampling to perform.
+        burnin = 100 * k
         # Now use an elliptical slice sampler to draw samples from the Gaussian
         # process posterior mean function given samples of the Gaussian process
         # hyperparameters. In this example, we are sampling the kernel
         # amplitude, its length scales (of which there is only one since this is
         # a one-dimensional example), and the noise level of the process. We use
         # relatively uninformative priors.
-        mean = np.zeros((k + 3, ))
-        covariance = np.diag(np.ones((k + 3, )) * 5.)
-        sampler = EllipticalSliceSampler(mean, covariance, log_likelihood_func)
-        samples = sampler.sample(n_models, 100 * k)
+        #
+        # TODO: This inner function can be moved outside? It's input would need
+        #       to be `dim`, `n_models`, `burnin`, and `log_likelihood_func`.
+        def elliptical_slice_sampling(dim):
+            """Performs elliptical slice sampling on the Gaussian process
+            marginal likelihood. This function takes an input `dim` which
+            determines the number of parameters for which posterior parameters
+            will be generated. In practice, this will only vary by one
+            corresponding to noise-free or noisy Gaussian processes.
+            """
+            mean = np.zeros((dim, ))
+            covariance = np.diag(np.ones((dim, )) * 5.)
+            sampler = EllipticalSliceSampler(mean, covariance, log_likelihood_func)
+            return sampler.sample(n_models, burnin)
+
+        try:
+            samples = elliptical_slice_sampling(k + 2)
+            noiseless = True
+            print("Successfully estimated noiseless Gaussian process model.")
+        except:
+            print(
+                "Failed to estimate a noiseless Gaussian process. Reverting to "
+                "non-zero noise model."
+            )
+            samples = elliptical_slice_sampling(k + 3)
+            noiseless = False
         samples[:, :-1] = np.exp(samples[:, :-1])
 
         # Now create an individual Gaussian process model for each setting of
@@ -93,10 +122,13 @@ class BayesianOptimization(object):
         # interpretations of the data.
         models = []
         for i in range(n_models):
+            length_scales, amplitude = samples[i, :k], samples[i, k]
+            prior_mean = samples[i, -1]
+            noise_level = 1e-6 if noiseless else samples[i, -2]
             gp = GaussianProcess(
-                MaternKernel(samples[i, :k], samples[i, -3]),
-                samples[i, -2],
-                samples[i, -1]
+                MaternKernel(length_scales, amplitude),
+                noise_level,
+                prior_mean
             )
             gp.fit(X, y)
             models.append(gp)
