@@ -1,12 +1,16 @@
 import numpy as np
-from sif.acquisitions import ExpectedImprovement, ImprovementProbability
 from sif.models import GaussianProcess
 from sif.kernels import MaternKernel
 from sif.samplers import EllipticalSliceSampler
+from sif.acquisitions import (
+    ExpectedImprovement, ImprovementProbability, UpperConfidenceBound
+)
+
 
 acq_dict = {
     "expected_improvement": ExpectedImprovement,
     "improvement_probability": ImprovementProbability,
+    "upper_confidence_bound": UpperConfidenceBound
 }
 
 
