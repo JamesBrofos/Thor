@@ -135,7 +135,7 @@ class BayesianOptimization(object):
 
         return models
 
-    def recommend(self, X, y, X_pending, model_class, n_models):
+    def recommend(self, X, y, X_pending, model_class, n_models, acquisition):
         """Choose points to evaluate from the parameter space based on Bayesian
         optimization. This function uses multiple random restarts in the unit
         hypercube in order to identify local maxima of the acquisition function.
@@ -159,14 +159,15 @@ class BayesianOptimization(object):
                 only linear in the number of observations.
             n_models (int): If a Gaussian process object is used, this is the
                 number of hyperparameters from the posterior to sample.
+            acquisition (string): A string specifying which acquisition function
+                should be used. The permissible values are the keys in the
+                dictionary `acq_dict`.
         """
         # Extract data size.
         n, k = X.shape
         # Transform original inputs into the unit hypercube.
         for i in range(n):
             X[i] = self.space.transform(X[i])
-        # Construct acquisition function.
-        acq = acq_dict[self.experiment.acq_func.name]
         # Estimate the probabilistic surrogate model.
         models = self.__fit_surrogate(X, y, model_class, n_models)
 
@@ -186,6 +187,8 @@ class BayesianOptimization(object):
             except:
                 models = self.__fit_surrogate(X, y, model_class, n_models)
 
-        # Compute a recommendation from the Bayesian optimization algorithm.
-        return acq(models).select()[0]
+        # Construct acquisition function and compute a recommendation from the
+        # Bayesian optimization algorithm.
+        print("The chosen acquisition function: {}.".format(acquisition))
+        return acq_dict[acquisition](models).select()[0]
 
