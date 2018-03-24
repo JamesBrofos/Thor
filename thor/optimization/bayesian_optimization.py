@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from sif.models import GaussianProcess
 from sif.kernels import MaternKernel
@@ -169,7 +170,9 @@ class BayesianOptimization(object):
         for i in range(n):
             X[i] = self.space.transform(X[i])
         # Estimate the probabilistic surrogate model.
+        start_time = time.time()
         models = self.__fit_surrogate(X, y, model_class, n_models)
+        print("Time elapsed to fit models: {:.4f}".format(time.time() - start_time))
 
         # Create fantasy observations for the pending values.
         if X_pending is not None:
@@ -189,6 +192,8 @@ class BayesianOptimization(object):
 
         # Construct acquisition function and compute a recommendation from the
         # Bayesian optimization algorithm.
-        print("The chosen acquisition function: {}.".format(acquisition))
-        return acq_dict[acquisition](models).select()[0]
+        start_time = time.time()
+        rec = acq_dict[acquisition](models).select()[0]
+        print("Time elapsed to select recommendation with {}: {:.4f}".format(acquisition, time.time() - start_time))
+        return rec
 
