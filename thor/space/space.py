@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Space(object):
+class Space:
     """Space Class
 
     The space class refers to the domain, typically a subset of the real numbers

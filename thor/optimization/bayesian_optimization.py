@@ -15,7 +15,7 @@ acq_dict = {
 }
 
 
-class BayesianOptimization(object):
+class BayesianOptimization:
     """Bayesian Optimization Class
 
     Bayesian optimization seeks to maximizes a latent objective function by
@@ -195,5 +195,9 @@ class BayesianOptimization(object):
         start_time = time.time()
         rec = acq_dict[acquisition](models).select()[0]
         print("Time elapsed to select recommendation with {}: {:.4f}".format(acquisition, time.time() - start_time))
-        return rec
 
+        # Make sure that the recommendation really is in the correct interval.
+        # This is by assumption the unit hypercube. Sometimes we may encounter
+        # slightly negative values, which will be clipped to zero by this
+        # method.
+        return np.clip(rec, 0., 1.)

@@ -1,8 +1,8 @@
 import numpy as np
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 
-class Dimension(object):
+class Dimension:
     """Bayesian Optimization Input Dimension Class
 
     Bayesian optimization seeks to identify to the maxima of a latent objective
@@ -11,8 +11,6 @@ class Dimension(object):
     the unit interval, how to invert a point in the unit interval to the
     original space, and how to sample from the dimension.
     """
-    __metaclass__ = ABCMeta
-
     @abstractmethod
     def transform(self, original_input):
         """Transforms an original input object to a real number in the unit
@@ -110,6 +108,8 @@ class LogarithmicDimension(LinearDimension):
     continuum between a low point and a high point.
     """
     def __init__(self, low, high):
+        if low == 0.:
+            low = 1e-16
         super(LogarithmicDimension, self).__init__(np.log(low), np.log(high))
 
     def transform(self, original_input):
