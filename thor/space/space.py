@@ -73,9 +73,14 @@ class Space:
         Returns:
             A point in the space of original inputs.
         """
-        t = np.zeros(self.n_dims)
-        for i in range(self.n_dims):
-            t[i] = self.dimensions[i].invert(transformed_input[i])
-
+        if transformed_input.ndim == 2:
+            n = transformed_input.shape[0]
+            t = np.zeros((n, self.n_dims))
+            for i in range(n):
+                t[i] = self.invert(transformed_input[i])
+        else:
+            t = np.zeros(self.n_dims)
+            for i in range(self.n_dims):
+                t[i] = self.dimensions[i].invert(transformed_input[i])
         return t
 

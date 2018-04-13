@@ -4,14 +4,15 @@ from sif.models import GaussianProcess
 from sif.kernels import MaternKernel
 from sif.samplers import EllipticalSliceSampler
 from sif.acquisitions import (
-    ExpectedImprovement, ImprovementProbability, UpperConfidenceBound
+    ExpectedImprovement, ImprovementProbability, UpperConfidenceBound, ThompsonSampling
 )
 
 
 acq_dict = {
     "expected_improvement": ExpectedImprovement,
     "improvement_probability": ImprovementProbability,
-    "upper_confidence_bound": UpperConfidenceBound
+    "upper_confidence_bound": UpperConfidenceBound,
+    "thompson_sampling": ThompsonSampling
 }
 
 
@@ -86,12 +87,12 @@ class BayesianOptimization:
         # Now use an elliptical slice sampler to draw samples from the Gaussian
         # process posterior mean function given samples of the Gaussian process
         # hyperparameters. In this example, we are sampling the kernel
-        # amplitude, its length scales (of which there is only one since this is
-        # a one-dimensional example), and the noise level of the process. We use
-        # relatively uninformative priors.
+        # amplitude, its length scales (of which there is only one since this
+        # is a one-dimensional example), and the noise level of the process. We
+        # use relatively uninformative priors.
         #
         # TODO: This inner function can be moved outside? It's input would need
-        #       to be `dim`, `n_models`, `burnin`, and `log_likelihood_func`.
+        # to be `dim`, `n_models`, `burnin`, and `log_likelihood_func`.
         def elliptical_slice_sampling(dim):
             """Performs elliptical slice sampling on the Gaussian process
             marginal likelihood. This function takes an input `dim` which
@@ -136,7 +137,16 @@ class BayesianOptimization:
 
         return models
 
-    def recommend(self, X, y, X_pending, model_class, n_models, acquisition):
+    def recommend(
+            self,
+            X,
+            y,
+            X_pending,
+            model_class,
+            n_models,
+            acquisition,
+            integrate_acq
+    ):
         """Choose points to evaluate from the parameter space based on Bayesian
         optimization. This function uses multiple random restarts in the unit
         hypercube in order to identify local maxima of the acquisition function.
@@ -180,7 +190,7 @@ class BayesianOptimization:
             n_pending = X_pending.shape[0]
             for i in range(n_pending):
                 X_pending[i] = self.space.transform(X_pending[i])
-            y_pending = np.random.choice(models).sample(X_pending)
+            y_pending = np.random.choice(models).sample(X_pending, target=True)
             # Retrain Gaussian process.
             X = np.vstack((X, X_pending))
             y = np.append(y, y_pending)
@@ -188,16 +198,28 @@ class BayesianOptimization:
                 for i in range(n_models):
                     models[i].fit(X, y)
             except:
+                print("Unable to refit models with fantasy observations. Resampling hyperparameters.")
                 models = self.__fit_surrogate(X, y, model_class, n_models)
 
         # Construct acquisition function and compute a recommendation from the
         # Bayesian optimization algorithm.
         start_time = time.time()
-        rec = acq_dict[acquisition](models).select()[0]
+        A = acq_dict[acquisition]
+        if integrate_acq:
+            recs = A(models).select()[0]
+        else:
+            n_models = len(models)
+            recs = np.zeros((n_models, k))
+            for i, mod in enumerate(models):
+                mod.fit(X, y)
+                recs[i] = A(mod).select()[0]
+                X = np.vstack((X, recs[i]))
+                y = np.append(y, mod.sample(recs[i], target=True))
+
         print("Time elapsed to select recommendation with {}: {:.4f}".format(acquisition, time.time() - start_time))
 
         # Make sure that the recommendation really is in the correct interval.
         # This is by assumption the unit hypercube. Sometimes we may encounter
         # slightly negative values, which will be clipped to zero by this
         # method.
-        return np.clip(rec, 0., 1.)
+        return np.clip(recs, 0., 1.)
