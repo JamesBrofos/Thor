@@ -73,6 +73,7 @@ class Space:
         Returns:
             A point in the space of original inputs.
         """
+        transformed_input = np.array(transformed_input)
         if transformed_input.ndim == 2:
             n = transformed_input.shape[0]
             t = np.zeros((n, self.n_dims))
