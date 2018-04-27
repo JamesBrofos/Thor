@@ -177,8 +177,7 @@ class BayesianOptimization:
         # Extract data size.
         n, k = X.shape
         # Transform original inputs into the unit hypercube.
-        for i in range(n):
-            X[i] = self.space.transform(X[i])
+        X = self.space.transform(X)
         # Estimate the probabilistic surrogate model.
         start_time = time.time()
         models = self.__fit_surrogate(X, y, model_class, n_models)
@@ -188,8 +187,7 @@ class BayesianOptimization:
         if X_pending is not None:
             # Sample from the predictive posterior.
             n_pending = X_pending.shape[0]
-            for i in range(n_pending):
-                X_pending[i] = self.space.transform(X_pending[i])
+            X_pending = self.space.transform(X_pending)
             y_pending = np.random.choice(models).sample(X_pending, target=True)
             # Retrain Gaussian process.
             X = np.vstack((X, X_pending))

@@ -53,9 +53,16 @@ class Space:
         Returns:
             A point in the unit hypercube.
         """
-        t = np.zeros(self.n_dims)
-        for i in range(self.n_dims):
-            t[i] = self.dimensions[i].transform(original_input[i])
+        original_input = np.array(original_input)
+        if original_input.ndim == 2:
+            n = original_input.shape[0]
+            t = np.zeros((n, self.n_dims))
+            for i in range(n):
+                t[i] = self.transform(original_input[i])
+        else:
+            t = np.zeros(self.n_dims)
+            for i in range(self.n_dims):
+                t[i] = self.dimensions[i].transform(original_input[i])
 
         return t
 
